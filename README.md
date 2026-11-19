@@ -5,7 +5,7 @@
 **Structured pruning of MiniMax H3 Ref2VA: 33B → 17B → 14B**
 
 [![Project page](https://img.shields.io/badge/Project-Page-1f6feb)](https://fuyi25.github.io/H3-Tiny/)
-![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-coming%20soon-ffcc4d)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-ffcc4d)](https://huggingface.co/H3-Tiny)
 ![arXiv](https://img.shields.io/badge/arXiv-coming%20soon-b31b1b)
 [![Code license](https://img.shields.io/badge/Code-Apache%202.0-555)](LICENSE)
 
@@ -24,9 +24,9 @@ and few-step checkpoints.
 
 | Checkpoint | Parameters | Made by | Sampling | Released |
 |---|---|---|---|:---:|
-| `H3-Tiny-17B-Pruned` | 17.1B | AdaLN rank 8 + 8 of 50 blocks removed, **no training** | 50 steps | soon |
-| `H3-Tiny-17B-FewStep-v0.1` | 17.1B | 17B, few-step distillation | **6 steps** by default (4 or more) | soon |
-| `H3-Tiny-14B-OKD-v0.1` | 14.0B | 17B with FFNs narrowed to 9792 channels, recovered by OKD (distillation from the 33B teacher) | 50 steps | soon |
+| [`H3-Tiny-17B-Pruned`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-Pruned) | 17.1B | AdaLN rank 8 + 8 of 50 blocks removed, **no training** | 50 steps | ✅ |
+| [`H3-Tiny-17B-FewStep-v0.1`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-FewStep-v0.1) | 17.1B | 17B, few-step distillation | **6 steps** by default (4 or more) | ✅ |
+| [`H3-Tiny-14B-OKD-v0.1`](https://huggingface.co/H3-Tiny/H3-Tiny-14B-OKD-v0.1) | 14.0B | 17B with FFNs narrowed to 9792 channels, recovered by OKD (distillation from the 33B teacher) | 50 steps | ✅ |
 | `H3-Tiny-14B-FewStep` | 14.0B | 14B OKD, then few-step distillation | **6 steps** by default (4 or more) | coming soon |
 
 **The 17B works well straight out of pruning, with no training at all!**
