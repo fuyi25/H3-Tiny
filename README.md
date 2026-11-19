@@ -20,6 +20,12 @@ and few-step checkpoints.
 
 <p align="center"><img src="assets/blocks.png" width="100%" alt="Block influence per block for video and audio tokens; blocks removed in the 17B"></p>
 
+## News
+
+- **[2026/11/19]** We release the pruning and inference code and the [project page](https://fuyi25.github.io/H3-Tiny/).
+- **[2026/11/19]** We release three checkpoints on [Hugging Face](https://huggingface.co/H3-Tiny): `H3-Tiny-17B-Pruned`,
+  `H3-Tiny-17B-FewStep-v0.1` and `H3-Tiny-14B-OKD-v0.1`.
+
 ## Checkpoints
 
 | Checkpoint | Parameters | Made by | Sampling | Released |
