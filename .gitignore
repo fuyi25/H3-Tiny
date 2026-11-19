@@ -5,3 +5,12 @@ __pycache__/
 *.part
 outputs/
 
+# pip install -e . / pytest
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# default output dirs of the README commands (calibration caches, pruned checkpoints)
+cache/
+ckpt/
