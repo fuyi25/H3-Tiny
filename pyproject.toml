@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "h3-tiny"
+version = "0.1.0"
+description = "H3-Tiny: structured pruning of MiniMax H3 Ref2VA (33B -> 17B -> 14B)"
+license = {text = "Apache-2.0"}
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["torch>=2.6", "torchaudio", "diffusers>=0.42", "safetensors", "transformers"]
+
+[project.optional-dependencies]
+fa3 = ["kernels"]
+
+[tool.setuptools.packages.find]
+include = ["h3tiny*"]

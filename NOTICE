@@ -1,0 +1,5 @@
+MiniMax H3 is licensed under the MiniMax H3 Community License Agreement, Copyright © 2026 MiniMax. All Rights Reserved.
+
+H3-Tiny model weights are Model Derivatives of MiniMax H3 and are distributed under the MiniMax H3 Community License
+Agreement (LICENSE-MiniMax-H3). They are pruned and, where noted, distilled from the official MiniMax H3 Ref2VA transformer;
+see README.md for exactly how each checkpoint was modified.

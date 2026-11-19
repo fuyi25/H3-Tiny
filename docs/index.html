@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>H3-Tiny</title>
+<meta name="description" content="H3-Tiny: structured pruning of MiniMax H3 Ref2VA, 33B to 17B to 14B, with recovered and few-step checkpoints.">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Classic academic project page: white, serif headings, monochrome UI; video is the only color on the page. */
+:root {
+  --bg: #ffffff;
+  --fg: #111111;
+  --muted: #5f6368;
+  --faint: #9aa0a6;
+  --rule: #e6e6e6;
+  --soft: #f6f6f5;
+  --audio: #3d8a6c;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --sans: "Geist", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.6 var(--sans); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.wide { max-width: calc(85vw + 32px); margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 11; background: var(--bg); }
+.top .wide { display: flex; justify-content: space-between; align-items: center; height: 48px; }
+.top .brand { font-weight: 600; font-size: 14px; text-decoration: none; }
+.top nav { display: flex; gap: 22px; font-size: 12.5px; color: var(--muted); }
+.top nav a { text-decoration: none; }
+.top nav a:hover { color: var(--fg); }
+
+.wall { display: flex; flex-direction: column; gap: 4px; padding-block: 10px 0; }
+.wall .r { display: flex; gap: 4px; height: clamp(90px, 11.5vw, 200px); }
+.wall .t { flex: var(--w) 1 0; min-width: 0; overflow: hidden; border-radius: 6px; background: var(--soft); }
+.wall video { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; padding-block: 44px 40px; align-items: start; }
+.hero h1 { font: 400 clamp(34px, 4.4vw, 50px)/1.08 var(--serif); letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+.authors { margin-top: 20px; font-size: 13.5px; }
+.authors .note { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.btn { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 15px; border-radius: 999px; background: var(--fg); color: #fff;
+  font: 500 13px var(--sans); text-decoration: none; border: 1px solid var(--fg); }
+.btn:hover { background: #333; }
+.btn svg { width: 15px; height: 15px; }
+.btn.off { background: #fff; color: var(--faint); border-color: var(--rule); cursor: default; }
+.btn.off em { font-style: normal; font-size: 11px; color: var(--muted); }
+.abstract p { font: 400 18.5px/1.55 var(--serif); margin: 0 0 14px; }
+.abstract p + p { font-size: 15.5px; color: var(--muted); }
+.tldr { font: 600 11.5px/1 var(--sans); letter-spacing: .08em; color: var(--fg); border: 1px solid var(--fg); border-radius: 4px; padding: 3px 6px; margin-right: 8px; vertical-align: 3px; }
+
+section { border-top: 1px solid var(--rule); padding-block: 48px 8px; }
+h2 { font: 400 30px/1.2 var(--serif); text-align: center; margin: 0 0 8px; }
+.sub { text-align: center; color: var(--muted); max-width: 64ch; margin: 0 auto 28px; }
+
+figure { margin: 0; }
+.chart { overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 640px; height: auto; }
+.chart text { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+.legend { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin: 0 0 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; border-radius: 2px; }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 78ch; margin: 10px auto 0; text-align: center; }
+figcaption b { color: var(--fg); font-weight: 600; }
+.sizes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; margin-top: 40px; }
+.size .k { font-size: 12px; color: var(--muted); }
+.size .v { font: 400 40px/1.1 var(--serif); margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
+.size .bar { height: 4px; background: var(--rule); border-radius: 2px; }
+.size .bar span { display: block; height: 100%; background: var(--fg); border-radius: 2px; }
+.size p { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+
+.stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; }
+.stage .k { font: 500 11.5px var(--mono); color: var(--muted); letter-spacing: .04em; }
+.stage h3 { font: 400 22px/1.25 var(--serif); margin: 6px 0 8px; }
+.stage p { margin: 0; color: var(--muted); font-size: 14px; }
+.stage .out { margin-top: 12px; font: 500 12.5px/1.6 var(--mono); color: var(--fg); }
+.recovery { max-width: 72ch; margin: 34px auto 0; text-align: center; color: var(--muted); font-size: 14px; }
+.recovery b { color: var(--fg); font-weight: 500; }
+
+#results .wrap, .wrap.hero { max-width: calc(85vw + 40px); }
+@media (max-width: 900px) { .wide, #results .wrap, .wrap.hero { max-width: none; } }
+.tabs { display: flex; justify-content: center; margin: 0 auto 26px; max-width: 760px; }
+.tabs button { flex: 1; background: none; border: 0; border-bottom: 1px solid var(--rule); padding: 10px 6px; font: 400 13.5px var(--sans); color: var(--muted); cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--fg); font-weight: 600; border-bottom: 2px solid var(--fg); }
+.steps { display: flex; justify-content: center; align-items: center; gap: 6px; margin: -10px 0 24px; font-size: 12.5px; color: var(--muted); }
+.steps span { margin-right: 4px; }
+.steps button { width: 36px; height: 30px; border-radius: 999px; border: 1px solid var(--rule); background: #fff; font: 500 13px var(--sans); color: var(--fg); cursor: pointer; }
+.steps button[aria-pressed="true"] { background: var(--fg); color: #fff; border-color: var(--fg); }
+.case { margin-bottom: 34px; }
+.case-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px 24px; flex-wrap: wrap; margin-bottom: 10px; }
+.case-head > div:first-child { min-width: 0; }
+.case-head h3 { font: 400 20px/1.3 var(--serif); margin: 0; }
+.case-head p { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; max-width: 66ch; }
+.refs { display: flex; align-items: center; gap: 6px; }
+.refs span { font-size: 11.5px; color: var(--faint); margin-right: 2px; }
+.refs img { height: 44px; width: auto; border-radius: 4px; cursor: zoom-in; transition: opacity .15s; }
+.refs img:hover { opacity: .8; }
+.zoom { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(17,17,17,.82); cursor: zoom-out; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.zoom img { max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.grid { display: grid; gap: 10px; }
+.cell .lab { font-size: 12.5px; margin-bottom: 5px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.cell .lab b { font-weight: 600; }
+.cell .lab span { color: var(--muted); }
+.cell .lab .hl { font-style: normal; font-weight: 600; color: var(--fg); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.cell video { width: 100%; max-width: 100%; aspect-ratio: 16 / 9; display: block; border-radius: 8px; background: #000; }
+.play { margin-top: 8px; font: 500 12.5px var(--sans); background: none; border: 0; padding: 0; color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.play:hover { color: var(--fg); }
+.foot-note { text-align: center; font-size: 12.5px; color: var(--faint); margin-top: -8px; }
+
+.tablewrap { overflow-x: auto; }
+table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 11px 12px 11px 0; border-bottom: 1px solid var(--rule); text-align: left; }
+th { font-weight: 500; color: var(--muted); font-size: 12.5px; }
+td.n { font-variant-numeric: tabular-nums; }
+tr.dim td { color: var(--muted); }
+
+pre { margin: 0; padding: 20px; border: 1px solid var(--rule); border-radius: 8px; background: var(--soft); white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.6 var(--mono); }
+footer { border-top: 1px solid var(--rule); margin-top: 56px; padding-block: 22px 40px; font-size: 12.5px; color: var(--faint); }
+footer .wrap { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+footer p { margin: 0; max-width: 82ch; }
+footer a { white-space: nowrap; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: 26px; }
+  .stages, .sizes { grid-template-columns: 1fr; gap: 26px; }
+  .wall .hide-m { display: none; }
+  .top nav { display: none; }
+  .grid { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 480px) { .grid { grid-template-columns: 1fr !important; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wide">
+    <a class="brand" href="#top">H3-Tiny</a>
+    <nav aria-label="Sections"><a href="#overview">Overview</a><a href="#where">Block analysis</a><a href="#method">Method</a><a href="#checkpoints">Checkpoints</a><a href="#results">Results</a><a href="#citation">Citation</a></nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wide wall" id="wall" aria-label="Generated samples"></div>
+
+  <div class="wrap hero" id="overview">
+    <div>
+      <h1>H3-Tiny: Structured Pruning of MiniMax H3</h1>
+      <div class="authors">Haoshuai Fu · Bin Chen<div class="note">Video and audio generation · 33B → 17B → 14B</div></div>
+      <div class="buttons">
+        <span class="btn off" title="The paper is in preparation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+          arXiv <em>coming soon</em></span>
+        <a class="btn" href="https://github.com/fuyi25/H3-Tiny">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></svg>Code</a>
+        <span class="btn off" title="The checkpoints are being uploaded">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>Models <em>coming soon</em></span>
+        <a class="btn" href="#results">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>Results</a>
+      </div>
+    </div>
+    <div class="abstract">
+      <p><span class="tldr">TL;DR</span> H3-Tiny compresses the 33B MiniMax H3 Ref2VA transformer to 17B without any training, and to 14B with a brief recovery training distilled from the original 33B, while keeping its synchronized audio.</p>
+      <p>Nearly 40% of the original parameters are per-block AdaLN projections of a fixed time embedding; we factor them to rank 8 without data. We then remove 8 of 50 blocks chosen by audio-aware block influence and narrow the feed-forward layers. A few-step version of the 17B samples in as few as 4 steps, 6 by default.</p>
+    </div>
+  </div>
+
+
+
+
+  <section id="where">
+    <div class="wrap">
+      <h2>Which blocks can go</h2>
+      <p class="sub">How much each of the 50 blocks changes its input, separately for video and audio tokens. A few blocks barely do anything; this is what the pruning below exploits.</p>
+      <figure>
+        <div class="legend">
+          <span><i style="background:var(--fg)"></i>video tokens</span>
+          <span><i style="background:var(--audio)"></i>audio tokens</span>
+          <span><i style="background:#e4e5e2"></i>removed in 17B</span>
+          <span><i style="background:none;border:1.5px solid var(--audio);border-radius:50%"></i>protected for audio</span>
+        </div>
+        <div class="chart" id="bi"></div>
+        <figcaption>Block influence, 1 − cos(input, output), 90th percentile over calibration clips and timesteps, square-root scale. Blocks 6–11 barely touch either modality. <b>We remove blocks 6–11, 13 and 15</b> and keep the twelve blocks the audio depends on most.</figcaption>
+      </figure>
+      <div class="sizes">
+        <div class="size"><div class="k">Official MiniMax H3</div><div class="v">33.1B</div><div class="bar"><span style="width:100%"></span></div><p>50 blocks; 13.0B of it in AdaLN projections.</p></div>
+        <div class="size"><div class="k">H3-Tiny 17B · no training</div><div class="v">17.1B</div><div class="bar"><span style="width:51.6%"></span></div><p>Rank-8 AdaLN, 42 blocks. Also as a few-step model: 6 steps by default, as few as 4.</p></div>
+        <div class="size"><div class="k">H3-Tiny 14B v0.1 · recovered</div><div class="v">14.0B</div><div class="bar"><span style="width:42.3%"></span></div><p>FFN narrowed to 9792 channels, then distilled from the 33B.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="method">
+    <div class="wrap">
+      <h2>Method Overview</h2>
+      <p class="sub">Each stage measures error on the inputs the layer really receives, and weighs audio separately so the short audio sequence is not drowned out by video.</p>
+      <div class="stages">
+        <div class="stage"><div class="k">STAGE 1</div><h3>Low-rank AdaLN</h3>
+          <p>Every block's modulation table is a linear map of a fixed time embedding. We sample that embedding over the video and audio schedules, whiten it, and keep the best rank-8 map for those inputs. No data is needed.</p>
+          <div class="out">13.0B → 37M parameters · error 1–3e-5</div></div>
+        <div class="stage"><div class="k">STAGE 2</div><h3>Block removal</h3>
+          <p>We rank blocks by influence on generated video, generated audio, references and text, protect the twelve most important for audio, and keep the drop set with the lowest audio error on held-out clips.</p>
+          <div class="out">50 → 42 blocks · 24 + 8 clips</div></div>
+        <div class="stage"><div class="k">STAGE 3</div><h3>Narrower feed-forward</h3>
+          <p>We keep the SwiGLU channels with the most output energy across both modalities and refit the down projection by ridge regression anchored at the original weights, with audio weighted twice.</p>
+          <div class="out">14336 → 9792 channels · 17.1B → 14.0B</div></div>
+      </div>
+      <p class="recovery"><b>Recovery.</b> The 14B learns to match the frozen 33B teacher's velocity on noised clips at every point of the 50-step trajectory, audio weighted twice, so it keeps the ordinary sampler. The few-step 17B adds a further few-step distillation; details will follow with the paper. Training code will be released with the paper.</p>
+    </div>
+  </section>
+
+  <section id="checkpoints">
+    <div class="wrap">
+      <h2>Checkpoints</h2>
+      <p class="sub">All run in the official diffusers MiniMax H3 Ref2VA pipeline with the H3-Tiny transformer.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Checkpoint</th><th>Parameters</th><th>Blocks</th><th>FFN width</th><th>Training</th><th>Steps</th></tr></thead>
+        <tbody>
+          <tr class="dim"><td>MiniMax H3 Ref2VA (teacher)</td><td class="n">33.1B</td><td class="n">50</td><td class="n">14336</td><td>–</td><td class="n">50</td></tr>
+          <tr><td>H3-Tiny-17B-Pruned</td><td class="n">17.1B</td><td class="n">42</td><td class="n">14336</td><td>none</td><td class="n">50</td></tr>
+          <tr><td>H3-Tiny-17B-FewStep-v0.1</td><td class="n">17.1B</td><td class="n">42</td><td class="n">14336</td><td>few-step distillation</td><td class="n">6 (4 or more)</td></tr>
+          <tr><td>H3-Tiny-14B-OKD-v0.1</td><td class="n">14.0B</td><td class="n">42</td><td class="n">9792</td><td>distillation (OKD)</td><td class="n">50</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="results">
+    <div class="wrap">
+      <h2>Results</h2>
+      <p class="sub">Same prompt, references and seed for every model. Full-step results are shown next to the original 33B and HyperFlow H3 Flash at 50 steps; few-step results next to HyperFlow H3 Flash at the same number of steps, with the original 33B at 50 steps on the left for reference. Turn the sound on.</p>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" aria-selected="true" data-group="full">Full-step · 50 steps</button>
+        <button type="button" role="tab" aria-selected="false" data-group="few">Few-step · 6 steps vs. HyperFlow H3 Flash</button>
+      </div>
+      <div id="cases"></div>
+      <p class="foot-note">Downscaled previews. All reference images are our own renders.</p>
+    </div>
+  </section>
+
+  <section id="citation">
+    <div class="wrap">
+      <h2>Citation</h2>
+      <p class="sub">The paper is in preparation; until then please cite the repository.</p>
+<pre>@misc{h3tiny2026,
+  title        = {H3-Tiny: Structured Pruning of MiniMax H3},
+  author       = {Fu, Haoshuai and Chen, Bin},
+  year         = {2026},
+  howpublished = {\url{https://github.com/fuyi25/H3-Tiny}},
+  note         = {arXiv coming soon}
+}</pre>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>H3-Tiny is an independent project and is not affiliated with or endorsed by MiniMax. The weights are Model Derivatives of MiniMax H3 under the MiniMax H3 Community License Agreement; MiniMax H3 is licensed under the MiniMax H3 Community License Agreement, Copyright © 2026 MiniMax. All Rights Reserved. Code: Apache 2.0.</p>
+    <a href="#top">Back to top ↑</a>
+  </div>
+</footer>
+
+<script>
+const BI = [[0.8729,0.9109],[0.7916,0.0726],[0.041,0.5351],[0.0059,0.5584],[0.0041,0.0605],[0.0036,0.924],[0.0051,0.0001],[0.0021,0.0001],[0.0029,0.0001],[0.0028,0.0001],
+[0.0017,0.0002],[0.0028,0.0002],[0.0046,0.0099],[0.0029,0.0001],[0.0037,0.0063],[0.0043,0.0021],[0.0057,0.0024],[0.0109,0.1834],[0.0167,0.0312],[0.0184,0.0017],
+[0.02,0.0065],[0.0145,0.001],[0.0471,0.0009],[0.036,0.0016],[0.0337,0.0033],[0.0735,0.0028],[0.1249,0.009],[0.1216,0.0089],[0.1401,0.0077],[0.173,0.0106],
+[0.1576,0.0148],[0.1718,0.0192],[0.1756,0.0444],[0.1833,0.0387],[0.2008,0.0476],[0.2361,0.0614],[0.2142,0.0956],[0.1956,0.0651],[0.1732,0.0899],[0.1481,0.1073],
+[0.1585,0.1121],[0.1731,0.0949],[0.2095,0.1037],[0.2364,0.0778],[0.2572,0.1025],[0.2116,0.1354],[0.1853,0.1682],[0.2135,0.2366],[0.3281,0.2947],[0.4193,0.2445]];
+const DROPPED = new Set([6, 7, 8, 9, 10, 11, 13, 15]);
+const PROTECTED = new Set([0, 2, 3, 5, 17, 39, 40, 45, 46, 47, 48, 49]);
+(function drawBI() {
+  const W = 1000, H = 250, L = 34, R = 6, mid = 112, half = 92, n = BI.length;
+  const step = (W - L - R) / n, bw = step * 0.62, s = v => Math.sqrt(v) * half;
+  const ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Video and audio block influence for 50 blocks; blocks 6 to 11, 13 and 15 are removed.");
+  const el = (tag, a) => { const e = document.createElementNS(ns, tag); for (const k in a) (k === "fill" || k === "stroke") ? e.style.setProperty(k, a[k]) : e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
+  [0.04, 0.25, 0.64].forEach(v => {
+    for (const sg of [-1, 1]) el("line", { x1: L, x2: W - R, y1: mid - sg * s(v), y2: mid - sg * s(v), stroke: "var(--rule)", "stroke-width": 1 });
+    el("text", { x: L - 6, y: mid - s(v) + 3, "text-anchor": "end" }).textContent = v;
+    el("text", { x: L - 6, y: mid + s(v) + 3, "text-anchor": "end" }).textContent = v;
+  });
+  BI.forEach(([v, a], i) => {
+    const x = L + i * step + (step - bw) / 2, cut = DROPPED.has(i);
+    if (cut) el("rect", { x: L + i * step, y: mid - half - 4, width: step, height: 2 * half + 8, fill: "#e4e5e2" });
+    el("rect", { x, y: mid - Math.max(s(v), 0.8), width: bw, height: Math.max(s(v), 0.8), rx: 1, fill: cut ? "var(--faint)" : "var(--fg)" });
+    el("rect", { x, y: mid, width: bw, height: Math.max(s(a), 0.8), rx: 1, fill: cut ? "var(--faint)" : "var(--audio)" });
+    if (PROTECTED.has(i)) el("circle", { cx: x + bw / 2, cy: mid + half + 14, r: 3.2, fill: "none", stroke: "var(--audio)", "stroke-width": 1.5 });
+    if (i % 5 === 0 || i === n - 1) el("text", { x: x + bw / 2, y: H - 6, "text-anchor": "middle" }).textContent = i;
+  });
+  el("line", { x1: L, x2: W - R, y1: mid, y2: mid, stroke: "var(--fg)", "stroke-width": 1 });
+  el("text", { x: W - R, y: 10, "text-anchor": "end" }).textContent = "video ↑  ·  audio ↓  ·  block index";
+  document.getElementById("bi").appendChild(svg);
+})();
+
+const MODELS = {
+  "official33b-50step":    ["MiniMax H3 33B", "original · 50 steps"],
+  "hyperflow-50step":      ["HyperFlow H3 Flash", "13.9B INT8 · 50 steps"],
+  "ours17b-pruned-50step": ["H3-Tiny 17B", "no training · 50 steps"],
+  "ours14b-kd-50step":     ["H3-Tiny 14B v0.1", "recovered · 50 steps"],
+  "ours17b-mf-8step":      ["H3-Tiny 17B-FewStep v0.1", "17.1B · 8 steps"],
+  "ours17b-mf-6step":      ["H3-Tiny 17B-FewStep v0.1", "17.1B · 6 steps"],
+  "ours17b-mf-4step":      ["H3-Tiny 17B-FewStep v0.1", "17.1B · 4 steps"],
+  "hyperflow-8step":       ["HyperFlow H3 Flash", "13.9B INT8 · 8 steps"],
+  "hyperflow-6step":       ["HyperFlow H3 Flash", "13.9B INT8 · 6 steps"],
+  "hyperflow-4step":       ["HyperFlow H3 Flash", "13.9B INT8 · 4 steps"],
+};
+// Full-step: the original and HyperFlow H3 Flash at 50 steps against our two full-step models. Few-step: HyperFlow H3 Flash against our few-step 17B
+// at the same step count, picked with the step selector.
+const GROUPS = {
+  full: ["official33b-50step", "hyperflow-50step", "ours17b-pruned-50step", "ours14b-kd-50step"],
+  few8: ["hyperflow-8step", "ours17b-mf-8step"],
+  few6: ["official33b-50step", "hyperflow-6step", "ours17b-mf-6step"],
+  few4: ["official33b-50step", "hyperflow-4step", "ours17b-mf-4step"],
+};
+let fewSteps = "6";
+// Two kinds of showcase: TEASER clips fill the hero wall (one H3-Tiny video each, no baseline); COMPARE cases fill
+// the Results tabs side by side with the original 33B (full-step) or HyperFlow H3 Flash (few-step).
+const COMPARE = {
+ full: [
+  { id: "x_sandstorm", title: "Sandstorm over a desert city", sub: "An explorer among half-buried ruins sees a wall of sand rolling in, pulls down his goggles and runs.", refs: 2 },
+  { id: "e9_witches", title: "Macbeth's witches", sub: "Three witches chant around a cauldron on a storm-lashed heath as lightning strikes.", refs: 2 },
+  { id: "e9_center_earth", title: "Journey to the center of the Earth", sub: "Two prehistoric sea monsters fight beside a tiny raft on an underground sea.", refs: 1 },
+  { id: "c_tea_calligraphy", title: "Tea and calligraphy", sub: "An old calligrapher pours tea, says one line in Chinese, then writes a single character.", refs: 3 },
+  { id: "a_anchor_news", title: "Evening news", sub: "A news anchor reads the evening headline in English, straight to camera.", refs: 2 },
+  { id: "h8_poetry_hanfu", title: "A Tang poem under the moon", sub: "A young woman in Hanfu recites a Tang poem in a bamboo pavilion at night.", refs: 2 },
+  { id: "h8_weather", title: "Weekend storm warning", sub: "A weather presenter in front of the map warns of storms this weekend, in English.", refs: 2 },
+  { id: "h8_podcast_duo", title: "Bilingual podcast", sub: "A host asks her guest in English how he learned Chinese, and he answers in Chinese.", refs: 3 },
+  { id: "a8_magical_girl", title: "A magical girl's vow", sub: "An anime magical girl raises her wand over a moonlit city and calls out her vow.", refs: 2 },
+  { id: "a8_vtuber", title: "Talking to chat", sub: "An anime VTuber with cat ears chats with her stream audience, in English.", refs: 2 },
+  { id: "c8_pixar_girl", title: "A frog in the garden", sub: "A little girl in a yellow raincoat finds a frog after the rain and is thrilled.", refs: 2 },
+  { id: "c8_monster", title: "A shy monster", sub: "A fluffy one-eyed monster in the closet shyly introduces itself to the child it was meant to scare.", refs: 2 },
+  { id: "s8_ink_scholar", title: "Ink-wash scholar", sub: "An ancient scholar in ink-wash style gazes at misty mountains and sighs over the passing years.", refs: 2 },
+  { id: "s8_game_knight", title: "Quest giver", sub: "A low-poly knight at the castle gate hands the player a quest.", refs: 2 },
+  { id: "s8_felt_puppet", title: "Felt puppet show", sub: "A felt puppet host teaches kids how to brush their teeth.", refs: 2 },
+  { id: "n8_cat_complain", title: "The bowl is empty", sub: "An orange tabby on the kitchen table complains that its bowl is empty.", refs: 2 },
+  { id: "n8_fox_spirit", title: "Fox spirit at the shrine", sub: "A nine-tailed fox spirit softly warns a lost traveler at a shrine at dusk.", refs: 2 },
+  { id: "n8_hamster_vlog", title: "Hamster cooking show", sub: "A golden hamster hosts a tiny cooking show in a dollhouse kitchen, in English.", refs: 2 },
+  { id: "n8_tiger_general", title: "The tiger general", sub: "An armored tiger general rallies his troops on a battlefield at dawn.", refs: 2 },
+  { id: "d8_anime_duo", title: "Who's flying?", sub: "A teenage pilot and his robot sidekick argue in the cockpit about who is flying.", refs: 3 },
+ ],
+ few: [
+  { id: "a_anchor_news", title: "Evening news", sub: "A news anchor reads the evening headline in English, straight to camera.", refs: 2 },
+  { id: "c_tea_calligraphy", title: "Tea and calligraphy", sub: "An old calligrapher pours tea, says one line in Chinese, then writes a single character.", refs: 3 },
+  { id: "h8_cooking_host", title: "Home cooking show", sub: "A cooking host makes tomato and scrambled eggs, explaining each step in Chinese.", refs: 2 },
+  { id: "h8_grandma_story", title: "Grandma's story", sub: "A grandmother in her armchair tells her grandchildren about her childhood, in Chinese.", refs: 2 },
+  { id: "h8_poetry_hanfu", title: "A Tang poem under the moon", sub: "A young woman in Hanfu recites a Tang poem in a bamboo pavilion at night.", refs: 2 },
+  { id: "h8_podcast_duo", title: "Bilingual podcast", sub: "A host asks her guest in English how he learned Chinese, and he answers in Chinese.", refs: 3 },
+  { id: "a8_magical_girl", title: "A magical girl's vow", sub: "An anime magical girl raises her wand over a moonlit city and calls out her vow.", refs: 2 },
+  { id: "a8_vtuber", title: "Talking to chat", sub: "An anime VTuber with cat ears chats with her stream audience, in English.", refs: 2 },
+  { id: "c8_inventor", title: "The jetpack demo", sub: "An old inventor proudly presents his jetpack, which promptly sputters.", refs: 2 },
+  { id: "c8_monster", title: "A shy monster", sub: "A fluffy one-eyed monster in the closet shyly introduces itself to the child it was meant to scare.", refs: 2 },
+  { id: "s8_ink_scholar", title: "Ink-wash scholar", sub: "An ancient scholar in ink-wash style gazes at misty mountains and sighs over the passing years.", refs: 2 },
+  { id: "s8_game_knight", title: "Quest giver", sub: "A low-poly knight at the castle gate hands the player a quest.", refs: 2 },
+  { id: "s8_felt_puppet", title: "Felt puppet show", sub: "A felt puppet host teaches kids how to brush their teeth.", refs: 2 },
+  { id: "n8_cat_complain", title: "The bowl is empty", sub: "An orange tabby on the kitchen table complains that its bowl is empty.", refs: 2 },
+  { id: "n8_fox_spirit", title: "Fox spirit at the shrine", sub: "A nine-tailed fox spirit softly warns a lost traveler at a shrine at dusk.", refs: 2 },
+  { id: "n8_hamster_vlog", title: "Hamster cooking show", sub: "A golden hamster hosts a tiny cooking show in a dollhouse kitchen, in English.", refs: 2 },
+  { id: "n8_tiger_general", title: "The tiger general", sub: "An armored tiger general rallies his troops on a battlefield at dawn.", refs: 2 },
+  { id: "d8_anime_duo", title: "Who's flying?", sub: "A teenage pilot and his robot sidekick argue in the cockpit about who is flying.", refs: 3 },
+ ],
+};
+
+// Teaser wall: three equal-height rows of [case, model, width share, class].
+const TEASER = [[["x_mech_landing", "ours17b-pruned-50step", 4, ""], ["a8_magical_girl", "ours17b-pruned-50step", 2, ""], ["z_flamenco", "ours17b-pruned-50step", 3, ""], ["e_band_stage", "ours17b-pruned-50step", 3, ""]],
+                [["z_lion_dance", "ours17b-pruned-50step", 3, ""], ["n8_tiger_general", "ours17b-pruned-50step", 3, ""], ["m_peking_opera", "ours17b-pruned-50step", 2, ""], ["d_cockpit_planet", "ours17b-pruned-50step", 2, "hide-m"], ["s8_ink_scholar", "ours17b-pruned-50step", 3, ""]],
+                [["n8_fox_spirit", "ours17b-pruned-50step", 3, ""], ["a8_schoolgirl", "ours17b-pruned-50step", 3, ""], ["h_clay_cookie", "ours17b-pruned-50step", 2, "hide-m"], ["x_sandstorm", "ours17b-pruned-50step", 4, ""]]];
+
+(function wall() {
+  document.getElementById("wall").innerHTML = TEASER.map(r => `<div class="r">${r.map(([c, m, w, cls]) =>
+    `<div class="t ${cls}" style="--w:${w}"><video muted loop playsinline autoplay preload="metadata" src="static/videos/${c}/${m}.mp4" aria-label="${MODELS[m][0]} sample"></video></div>`).join("")}</div>`).join("");
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.querySelectorAll("#wall video").forEach(v => { v.removeAttribute("autoplay"); v.pause(); });
+})();
+
+function render(group) {
+  if (group === "few") group = "few" + fewSteps;
+  const keys = GROUPS[group], cols = `repeat(${keys.length}, minmax(0, 1fr))`;
+  document.getElementById("cases").innerHTML = COMPARE[group.startsWith("few") ? "few" : "full"].map(c => `
+    <div class="case">
+      <div class="case-head">
+        <div><h3>${c.title}</h3><p>${c.sub}</p></div>
+        <div class="refs"><span>References</span>${Array.from({ length: c.refs }, (_, i) => `<img loading="lazy" src="static/refs/${c.id}_${i + 1}.jpg" alt="Reference ${i + 1}">`).join("")}</div>
+      </div>
+      <div class="grid" style="grid-template-columns:${cols}">
+        ${keys.map(k => `<div class="cell"><div class="lab"><b>${MODELS[k][0]}</b><span>${MODELS[k][1].replace("no training", '<em class="hl">no training</em>')}</span></div><video controls playsinline preload="metadata" src="static/videos/${c.id}/${k}.mp4"></video></div>`).join("")}
+      </div>
+      <button type="button" class="play">Play row in sync</button>
+    </div>`).join("");
+  document.querySelectorAll(".case").forEach(card => {
+    const vids = [...card.querySelectorAll(".cell video")];
+    card.querySelector(".play").onclick = () => vids.forEach(v => { v.currentTime = 0; v.play().catch(() => {}); });
+  });
+}
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+  render(b.dataset.group);
+});
+render("full");
+// Click a reference thumbnail to view it full size; click anywhere (or press Esc) to close.
+document.addEventListener("click", e => {
+  const z = document.querySelector(".zoom");
+  if (z) { z.remove(); return; }
+  const img = e.target.closest(".refs img");
+  if (!img) return;
+  const o = document.createElement("div"); o.className = "zoom";
+  o.innerHTML = `<img src="${img.getAttribute("src")}" alt="${img.alt}">`;
+  document.body.appendChild(o);
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelector(".zoom")?.remove(); });
+</script>
+</body>
+</html>
