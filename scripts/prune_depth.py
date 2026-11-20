@@ -1,7 +1,10 @@
 """Stages 1-2: official 33B -> 17B. Drop 8 of 50 blocks by measured block influence; factor AdaLN to rank 8.
 
-    python scripts/prune_depth.py --base /models/MiniMax-H3 \\
+    python scripts/prune_depth.py --base /models/MiniMax-H3/transformer_ref \\
         --calibration /cache/calibration --tuning /cache/tuning --out /models/h3tiny-17b-pruned
+
+``--base`` is the transformer to prune: ``transformer_ref`` (Ref2VA, ``ref2va`` samples) or ``transformer`` (FL2VA,
+which serves ``t2va`` and ``fl2va``; calibrate it with samples of those workflows).
 
 ``--calibration`` / ``--tuning`` hold ``*.pt`` samples from ``scripts/prepare_samples.py`` (we used 24 / 8 disjoint
 clips). One GPU with room for the 33B teacher in bf16 (~66 GB) is enough. Steps, all written to ``--out/plan``:
@@ -63,7 +66,8 @@ def plan_depth(args, plan_dir: Path, num_layers: int) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--base", required=True, help="official MiniMax-H3 checkpoint (diffusers dir)")
+    ap.add_argument("--base", required=True,
+                    help="official transformer dir: MiniMax-H3/transformer_ref (Ref2VA) or MiniMax-H3/transformer (FL2VA)")
     ap.add_argument("--calibration")
     ap.add_argument("--tuning")
     ap.add_argument("--out", required=True)

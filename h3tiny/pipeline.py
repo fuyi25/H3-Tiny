@@ -31,6 +31,9 @@ log = logging.getLogger(__name__)
 #: Short names accepted by ``attention_backend``; anything else goes to diffusers' ``set_attention_backend`` as is.
 ATTENTION_BACKENDS = {"sdpa": "native", "fa3": "_flash_3_hub"}
 
+#: GPU memory kept free for activations under ``offload=True`` (a 10 s 768p clip needs about this much).
+OFFLOAD_MARGIN = "24GB"
+
 #: Transformer component of each official workflow.
 TRANSFORMER_COMPONENTS = {"t2va": "transformer", "fl2va": "transformer", "ref2va": "transformer_ref"}
 
@@ -197,7 +200,9 @@ def load_pipeline(weights: str | Path, base_model: str | Path, *, workflow: str 
     log.info("H3 Tiny %s on %s: attention %s, offload %s", workflow, device, backend or "sdpa", offload)
     pipe.update_components(**{component: transformer})
     if offload:
-        manager.enable_auto_cpu_offload(device=device)
+        # Keep room for activations: with the default 3 GB margin a GPU that can hold the text encoder and the
+        # transformer together (e.g. the 33B on a 141 GB H200) keeps both resident and runs out in the first step.
+        manager.enable_auto_cpu_offload(device=device, memory_reserve_margin=OFFLOAD_MARGIN)
     else:
         pipe.to(device)
     return pipe

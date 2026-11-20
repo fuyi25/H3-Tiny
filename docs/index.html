@@ -91,6 +91,7 @@ figcaption b { color: var(--fg); font-weight: 600; }
 @media (max-width: 900px) { .wide, #results .wrap, .wrap.hero { max-width: none; } }
 .tabs { display: flex; justify-content: center; margin: 0 auto 26px; max-width: 760px; }
 .tabs button { flex: 1; background: none; border: 0; border-bottom: 1px solid var(--rule); padding: 10px 6px; font: 400 13.5px var(--sans); color: var(--muted); cursor: pointer; }
+.wf { font: 600 11px var(--sans); letter-spacing: .06em; color: var(--muted); border: 1px solid var(--rule); border-radius: 4px; padding: 1px 5px; vertical-align: middle; margin-left: 6px; }
 .tabs button[aria-selected="true"] { color: var(--fg); font-weight: 600; border-bottom: 2px solid var(--fg); }
 .steps { display: flex; justify-content: center; align-items: center; gap: 6px; margin: -10px 0 24px; font-size: 12.5px; color: var(--muted); }
 .steps span { margin-right: 4px; }
@@ -189,7 +190,7 @@ footer a { white-space: nowrap; color: var(--muted); }
           <span><i style="background:none;border:1.5px solid var(--audio);border-radius:50%"></i>protected for audio</span>
         </div>
         <div class="chart" id="bi"></div>
-        <figcaption>Block influence, 1 − cos(input, output), 90th percentile over calibration clips and timesteps, square-root scale. Blocks 6–11 barely touch either modality. <b>We remove blocks 6–11, 13 and 15</b> and keep the twelve blocks the audio depends on most.</figcaption>
+        <figcaption>Block influence, 1 − cos(input, output), 90th percentile over calibration clips and timesteps, square-root scale. Blocks 6–11 barely touch either modality. <b>We remove blocks 6–11, 13 and 15</b> and keep the twelve blocks the audio depends on most. The same search on H3's separate FL2VA / T2VA transformer removes exactly the same eight blocks.</figcaption>
       </figure>
       <div class="sizes">
         <div class="size"><div class="k">Official MiniMax H3</div><div class="v">33.1B</div><div class="bar"><span style="width:100%"></span></div><p>50 blocks; 13.0B of it in AdaLN projections.</p></div>
@@ -221,12 +222,13 @@ footer a { white-space: nowrap; color: var(--muted); }
   <section id="checkpoints">
     <div class="wrap">
       <h2>Checkpoints</h2>
-      <p class="sub">All run in the official diffusers MiniMax H3 Ref2VA pipeline with the H3-Tiny transformer.</p>
+      <p class="sub">All run in the official diffusers MiniMax H3 pipelines with the H3-Tiny transformer: Ref2VA, or FL2VA and T2VA for the FL2VA checkpoint.</p>
       <div class="tablewrap"><table>
         <thead><tr><th>Checkpoint</th><th>Parameters</th><th>Blocks</th><th>FFN width</th><th>Training</th><th>Steps</th></tr></thead>
         <tbody>
           <tr class="dim"><td>MiniMax H3 Ref2VA (teacher)</td><td class="n">33.1B</td><td class="n">50</td><td class="n">14336</td><td>–</td><td class="n">50</td></tr>
           <tr><td>H3-Tiny-17B-Pruned</td><td class="n">17.1B</td><td class="n">42</td><td class="n">14336</td><td>none</td><td class="n">50</td></tr>
+          <tr><td>H3-Tiny-17B-Pruned-FL2VA <small class="wf">FL2VA · T2VA</small></td><td class="n">17.1B</td><td class="n">42</td><td class="n">14336</td><td>none</td><td class="n">50</td></tr>
           <tr><td>H3-Tiny-17B-FewStep-v0.1</td><td class="n">17.1B</td><td class="n">42</td><td class="n">14336</td><td>few-step distillation</td><td class="n">6 (4 or more)</td></tr>
           <tr><td>H3-Tiny-14B-OKD-v0.1</td><td class="n">14.0B</td><td class="n">42</td><td class="n">9792</td><td>distillation (OKD)</td><td class="n">50</td></tr>
         </tbody>
@@ -241,7 +243,9 @@ footer a { white-space: nowrap; color: var(--muted); }
       <div class="tabs" role="tablist">
         <button type="button" role="tab" aria-selected="true" data-group="full">Full-step · 50 steps</button>
         <button type="button" role="tab" aria-selected="false" data-group="few">Few-step · 6 steps vs. HyperFlow H3 Flash</button>
+        <button type="button" role="tab" aria-selected="false" data-group="fl">FL2VA &amp; T2VA · 17B, no training</button>
       </div>
+      <p class="sub" id="tabnote" hidden>The FL2VA / T2VA transformer of MiniMax H3, pruned with the same recipe (calibrated on FL2VA and T2VA clips) against the original at 50 steps. FL2VA takes a first and a last frame; T2VA only the text. Search picks the same eight blocks as for Ref2VA, and no training follows.</p>
       <div id="cases"></div>
       <p class="foot-note">Downscaled previews. All reference images are our own renders.</p>
     </div>
@@ -314,6 +318,8 @@ const MODELS = {
   "hyperflow-8step":       ["HyperFlow H3 Flash", "13.9B INT8 · 8 steps"],
   "hyperflow-6step":       ["HyperFlow H3 Flash", "13.9B INT8 · 6 steps"],
   "hyperflow-4step":       ["HyperFlow H3 Flash", "13.9B INT8 · 4 steps"],
+  "official33b-fl":        ["MiniMax H3 33B", "original · 50 steps"],
+  "ours17b-fl2va-50step":  ["H3-Tiny 17B-Pruned-FL2VA", "no training · 50 steps"],
 };
 // Full-step: the original and HyperFlow H3 Flash at 50 steps against our two full-step models. Few-step: HyperFlow H3 Flash against our few-step 17B
 // at the same step count, picked with the step selector.
@@ -322,7 +328,13 @@ const GROUPS = {
   few8: ["hyperflow-8step", "ours17b-mf-8step"],
   few6: ["official33b-50step", "hyperflow-6step", "ours17b-mf-6step"],
   few4: ["official33b-50step", "hyperflow-4step", "ours17b-mf-4step"],
+  fl: ["official33b-fl", "ours17b-fl2va-50step"],
 };
+// FL2VA / T2VA cases reuse the titles of the Ref2VA cases with the same id; files are <id>/<wf>-<model>.mp4.
+const FL = [["fl2va", ["x_sandstorm", "e9_witches", "e9_center_earth", "c_tea_calligraphy", "a_anchor_news", "h8_weather", "a8_magical_girl",
+  "c8_pixar_girl", "s8_ink_scholar", "n8_fox_spirit", "n8_hamster_vlog", "d8_anime_duo", "n8_tiger_general"]],
+  ["t2va", ["x_sandstorm", "e9_witches", "n8_cat_complain", "h8_poetry_hanfu"]]];
+const FLFILE = { "official33b-fl": "official33b-50step", "ours17b-fl2va-50step": "ours17b-fl2va-50step" };
 let fewSteps = "6";
 // Two kinds of showcase: TEASER clips fill the hero wall (one H3-Tiny video each, no baseline); COMPARE cases fill
 // the Results tabs side by side with the original 33B (full-step) or HyperFlow H3 Flash (few-step).
@@ -372,7 +384,7 @@ const COMPARE = {
 };
 
 // Teaser wall: three equal-height rows of [case, model, width share, class].
-const TEASER = [[["x_mech_landing", "ours17b-pruned-50step", 4, ""], ["a8_magical_girl", "ours17b-pruned-50step", 2, ""], ["z_flamenco", "ours17b-pruned-50step", 3, ""], ["e_band_stage", "ours17b-pruned-50step", 3, ""]],
+const TEASER = [[["x_mech_landing", "ours17b-pruned-50step", 4, ""], ["a8_magical_girl", "ours17b-pruned-50step", 2, ""], ["c8_monster", "ours17b-pruned-50step", 3, ""], ["e_band_stage", "ours17b-pruned-50step", 3, ""]],
                 [["z_lion_dance", "ours17b-pruned-50step", 3, ""], ["n8_tiger_general", "ours17b-pruned-50step", 3, ""], ["m_peking_opera", "ours17b-pruned-50step", 2, ""], ["d_cockpit_planet", "ours17b-pruned-50step", 2, "hide-m"], ["s8_ink_scholar", "ours17b-pruned-50step", 3, ""]],
                 [["n8_fox_spirit", "ours17b-pruned-50step", 3, ""], ["a8_schoolgirl", "ours17b-pruned-50step", 3, ""], ["h_clay_cookie", "ours17b-pruned-50step", 2, "hide-m"], ["x_sandstorm", "ours17b-pruned-50step", 4, ""]]];
 
@@ -382,17 +394,29 @@ const TEASER = [[["x_mech_landing", "ours17b-pruned-50step", 4, ""], ["a8_magica
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) document.querySelectorAll("#wall video").forEach(v => { v.removeAttribute("autoplay"); v.pause(); });
 })();
 
+function flCases() {
+  const byId = Object.fromEntries(COMPARE.full.map(c => [c.id, c]));
+  return FL.flatMap(([wf, ids]) => ids.map(id => ({ ...byId[id], wf })));
+}
+function refsHtml(c) {
+  if (c.wf === "fl2va") return `<span>First / last frame</span>${["first", "last"].map(p => `<img loading="lazy" src="static/refs/${c.id}_${p}.jpg" alt="${p} frame">`).join("")}`;
+  if (c.wf === "t2va") return `<span>Text only · T2VA</span>`;
+  return `<span>References</span>${Array.from({ length: c.refs }, (_, i) => `<img loading="lazy" src="static/refs/${c.id}_${i + 1}.jpg" alt="Reference ${i + 1}">`).join("")}`;
+}
 function render(group) {
+  document.getElementById("tabnote").hidden = group !== "fl";
   if (group === "few") group = "few" + fewSteps;
   const keys = GROUPS[group], cols = `repeat(${keys.length}, minmax(0, 1fr))`;
-  document.getElementById("cases").innerHTML = COMPARE[group.startsWith("few") ? "few" : "full"].map(c => `
+  const list = group === "fl" ? flCases() : COMPARE[group.startsWith("few") ? "few" : "full"];
+  const src = (c, k) => c.wf ? `static/videos/${c.id}/${c.wf}-${FLFILE[k]}.mp4` : `static/videos/${c.id}/${k}.mp4`;
+  document.getElementById("cases").innerHTML = list.map(c => `
     <div class="case">
       <div class="case-head">
-        <div><h3>${c.title}</h3><p>${c.sub}</p></div>
-        <div class="refs"><span>References</span>${Array.from({ length: c.refs }, (_, i) => `<img loading="lazy" src="static/refs/${c.id}_${i + 1}.jpg" alt="Reference ${i + 1}">`).join("")}</div>
+        <div><h3>${c.title}${c.wf ? ` <small class="wf">${c.wf.toUpperCase()}</small>` : ""}</h3><p>${c.sub}</p></div>
+        <div class="refs">${refsHtml(c)}</div>
       </div>
       <div class="grid" style="grid-template-columns:${cols}">
-        ${keys.map(k => `<div class="cell"><div class="lab"><b>${MODELS[k][0]}</b><span>${MODELS[k][1].replace("no training", '<em class="hl">no training</em>')}</span></div><video controls playsinline preload="metadata" src="static/videos/${c.id}/${k}.mp4"></video></div>`).join("")}
+        ${keys.map(k => `<div class="cell"><div class="lab"><b>${MODELS[k][0]}</b><span>${MODELS[k][1].replace("no training", '<em class="hl">no training</em>')}</span></div><video controls playsinline preload="metadata" src="${src(c, k)}"></video></div>`).join("")}
       </div>
       <button type="button" class="play">Play row in sync</button>
     </div>`).join("");

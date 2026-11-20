@@ -1,9 +1,13 @@
-"""Encode ref2va samples into cached transformer inputs with ground-truth targets (for calibration and OKD).
+"""Encode samples into cached transformer inputs with ground-truth targets (for calibration and OKD).
 
 Input is a JSONL manifest, one sample per line:
 
     {"sample_id": "0001", "prompt": "...", "references": ["ref1.png", "ref2.png"], "video": "gt.mp4",
      "num_frames": 124}
+
+``"workflow"`` is ``"ref2va"`` by default (for the Ref2VA transformer). For the FL2VA transformer use ``"fl2va"``
+(keyframes are the first and last frame of ``video``; no references) and ``"t2va"`` (text only); a manifest may mix
+the two.
 
 Writes ``<out>/<sample_id>.pt``; existing files are skipped, so the job can be resumed. Shard over GPUs with
 ``torchrun --nproc_per_node 8 scripts/prepare_samples.py ...`` (each rank takes every world_size-th sample), or run
@@ -49,9 +53,14 @@ def main() -> None:
     print(f"[rank {rank}] {len(todo)} of {len(samples[rank::world])} samples to encode", flush=True)
     if not todo:
         return
-    batcher = H3Batcher(args.base_model, device=f"cuda:{local}")
+    todo.sort(key=lambda s: s.workflow)  # one batcher per workflow
+    batcher = None
     failed = 0
     for i, sample in enumerate(todo):
+        if batcher is None or batcher.workflow != sample.workflow:
+            batcher = None
+            torch.cuda.empty_cache()
+            batcher = H3Batcher(args.base_model, device=f"cuda:{local}", workflow=sample.workflow)
         try:
             prepared = batcher.prepare(sample, seed=args.seed)
         except Exception:  # keep going; report at the end

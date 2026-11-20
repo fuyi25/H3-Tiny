@@ -22,6 +22,8 @@ and few-step checkpoints.
 
 ## News
 
+- **[2026/11/20]** We release [`H3-Tiny-17B-Pruned-FL2VA`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-Pruned-FL2VA),
+  the H3 FL2VA / T2VA transformer pruned to 17B with no training.
 - **[2026/11/19]** We release the pruning and inference code and the [project page](https://fuyi25.github.io/H3-Tiny/).
 - **[2026/11/19]** We release three checkpoints on [Hugging Face](https://huggingface.co/H3-Tiny): `H3-Tiny-17B-Pruned`,
   `H3-Tiny-17B-FewStep-v0.1` and `H3-Tiny-14B-OKD-v0.1`.
@@ -31,6 +33,7 @@ and few-step checkpoints.
 | Checkpoint | Parameters | Made by | Sampling | Released |
 |---|---|---|---|:---:|
 | [`H3-Tiny-17B-Pruned`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-Pruned) | 17.1B | AdaLN rank 8 + 8 of 50 blocks removed, **no training** | 50 steps | ✅ |
+| [`H3-Tiny-17B-Pruned-FL2VA`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-Pruned-FL2VA) | 17.1B | Same recipe on the FL2VA / T2VA transformer (same 8 blocks removed), **no training** | 50 steps | ✅ |
 | [`H3-Tiny-17B-FewStep-v0.1`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-FewStep-v0.1) | 17.1B | 17B, few-step distillation | **6 steps** by default (4 or more) | ✅ |
 | [`H3-Tiny-14B-OKD-v0.1`](https://huggingface.co/H3-Tiny/H3-Tiny-14B-OKD-v0.1) | 14.0B | 17B with FFNs narrowed to 9792 channels, recovered by OKD (distillation from the 33B teacher) | 50 steps | ✅ |
 | `H3-Tiny-14B-FewStep` | 14.0B | 14B OKD, then few-step distillation | **6 steps** by default (4 or more) | coming soon |
@@ -45,6 +48,7 @@ follow.
 - [x] Pruning code: AdaLN low-rank, block removal, FFN narrowing
 - [x] Inference: 50-step and few-step (6 steps by default, 4 or more)
 - [x] Weights: 17B pruned, 17B few-step v0.1, 14B OKD v0.1
+- [x] FL2VA / T2VA: 17B pruned
 - [ ] Weights: 14B few-step
 - [ ] OKD recovery training code
 - [ ] Few-step distillation code
@@ -85,6 +89,15 @@ from h3tiny.pipeline import load_pipeline
 pipe = load_pipeline("ckpt/H3-Tiny-17B-FewStep-v0.1", "/models/MiniMax-H3", device="cuda")
 ```
 
+For FL2VA (first + last frame) and T2VA (text only), use `H3-Tiny-17B-Pruned-FL2VA` with `--workflow`:
+
+```bash
+python scripts/infer.py --weights ckpt/H3-Tiny-17B-Pruned-FL2VA --base-model /models/MiniMax-H3 --workflow fl2va \
+    --image first.png --last-image last.png --prompt "For the target video, at 0.00 seconds ..." --num-frames 124 --out outputs/
+python scripts/infer.py --weights ckpt/H3-Tiny-17B-Pruned-FL2VA --base-model /models/MiniMax-H3 --workflow t2va \
+    --prompt "integrated_multimodal_description: ..." --num-frames 124 --out outputs/
+```
+
 The pipeline is the official diffusers MiniMax H3 workflow with the H3-Tiny transformer and step schedule
 (`h3tiny/pipeline.py`).
 
@@ -103,7 +116,9 @@ python scripts/prepare_samples.py --base-model /models/MiniMax-H3 --manifest tun
 
 Each clip goes through the official ref2va workflow (same encoders, packing and conditioning noise as inference);
 the denoising loop is replaced by a capture step that keeps the transformer inputs with the ground-truth latents as
-targets (`h3tiny/data.py`). We used 24 calibration and 8 tuning clips.
+targets (`h3tiny/data.py`). We used 24 calibration and 8 tuning clips. For the FL2VA / T2VA transformer, give each line a `"workflow": "fl2va"` or `"t2va"` field
+(FL2VA uses the clip's first and last frames) and point `--base` of the pruning step at the official `transformer`
+folder instead of `transformer_ref`.
 
 **2. 33B → 17B** (one GPU with ~80 GB):
 
