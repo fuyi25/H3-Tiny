@@ -9,7 +9,7 @@
 ![arXiv](https://img.shields.io/badge/arXiv-coming%20soon-b31b1b)
 [![Code license](https://img.shields.io/badge/Code-Apache%202.0-555)](LICENSE)
 
-<img src="assets/teaser.jpg" width="100%" alt="Samples from H3-Tiny 17B, pruned with no training, 50 steps">
+<img src="assets/teaser-v2.jpg" width="100%" alt="Samples from H3-Tiny 17B, pruned with no training, 50 steps">
 
 <sub>Samples from <b>H3-Tiny 17B</b>: pruned with no training, 50 steps, with its own synchronized audio.</sub>
 
@@ -25,18 +25,18 @@ and few-step checkpoints.
 - **[2026/11/20]** We release [`H3-Tiny-17B-Pruned-FL2VA`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-Pruned-FL2VA),
   the H3 FL2VA / T2VA transformer pruned to 17B with no training.
 - **[2026/11/19]** We release the pruning and inference code and the [project page](https://fuyi25.github.io/H3-Tiny/).
-- **[2026/11/19]** We release three checkpoints on [Hugging Face](https://huggingface.co/H3-Tiny): `H3-Tiny-17B-Pruned`,
-  `H3-Tiny-17B-FewStep-v0.1` and `H3-Tiny-14B-OKD-v0.1`.
+- **[2026/11/19]** We release three checkpoints on [Hugging Face](https://huggingface.co/H3-Tiny): `H3-Tiny-17B-Pruned-Ref2VA`,
+  `H3-Tiny-17B-FewStep-Ref2VA-v0.1` and `H3-Tiny-14B-OKD-Ref2VA-v0.1`.
 
 ## Checkpoints
 
 | Checkpoint | Parameters | Made by | Sampling | Released |
 |---|---|---|---|:---:|
-| [`H3-Tiny-17B-Pruned`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-Pruned) | 17.1B | AdaLN rank 8 + 8 of 50 blocks removed, **no training** | 50 steps | ✅ |
+| [`H3-Tiny-17B-Pruned-Ref2VA`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-Pruned-Ref2VA) | 17.1B | AdaLN rank 8 + 8 of 50 blocks removed, **no training** | 50 steps | ✅ |
 | [`H3-Tiny-17B-Pruned-FL2VA`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-Pruned-FL2VA) | 17.1B | Same recipe on the FL2VA / T2VA transformer (same 8 blocks removed), **no training** | 50 steps | ✅ |
-| [`H3-Tiny-17B-FewStep-v0.1`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-FewStep-v0.1) | 17.1B | 17B, few-step distillation | **6 steps** by default (4 or more) | ✅ |
-| [`H3-Tiny-14B-OKD-v0.1`](https://huggingface.co/H3-Tiny/H3-Tiny-14B-OKD-v0.1) | 14.0B | 17B with FFNs narrowed to 9792 channels, recovered by OKD (distillation from the 33B teacher) | 50 steps | ✅ |
-| `H3-Tiny-14B-FewStep` | 14.0B | 14B OKD, then few-step distillation | **6 steps** by default (4 or more) | coming soon |
+| [`H3-Tiny-17B-FewStep-Ref2VA-v0.1`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-FewStep-Ref2VA-v0.1) | 17.1B | 17B, few-step distillation | **6 steps** by default (4 or more) | ✅ |
+| [`H3-Tiny-14B-OKD-Ref2VA-v0.1`](https://huggingface.co/H3-Tiny/H3-Tiny-14B-OKD-Ref2VA-v0.1) | 14.0B | 17B with FFNs narrowed to 9792 channels, recovered by OKD (distillation from the 33B teacher) | 50 steps | ✅ |
+| `H3-Tiny-14B-FewStep-Ref2VA` | 14.0B | 14B OKD, then few-step distillation | **6 steps** by default (4 or more) | coming soon |
 
 **The 17B works well straight out of pruning, with no training at all!**
 
@@ -74,7 +74,7 @@ the 33B transformer, to prune it yourself).
 ## Inference
 
 ```bash
-python scripts/infer.py --weights ckpt/H3-Tiny-17B-FewStep-v0.1 --base-model /models/MiniMax-H3 \
+python scripts/infer.py --weights ckpt/H3-Tiny-17B-FewStep-Ref2VA-v0.1 --base-model /models/MiniMax-H3 \
     --prompt "<Picture 1> ..." --references ref1.png --num-frames 124 --out outputs/
 ```
 
@@ -86,7 +86,7 @@ otherwise; force one with `--attention fa3` or `--attention sdpa`. From Python:
 
 ```python
 from h3tiny.pipeline import load_pipeline
-pipe = load_pipeline("ckpt/H3-Tiny-17B-FewStep-v0.1", "/models/MiniMax-H3", device="cuda")
+pipe = load_pipeline("ckpt/H3-Tiny-17B-FewStep-Ref2VA-v0.1", "/models/MiniMax-H3", device="cuda")
 ```
 
 For FL2VA (first + last frame) and T2VA (text only), use `H3-Tiny-17B-Pruned-FL2VA` with `--workflow`:

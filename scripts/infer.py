@@ -1,7 +1,7 @@
 """Generate video + audio with an H3 Tiny checkpoint.
 
     # one clip (ref2va, the default workflow)
-    python scripts/infer.py --weights ckpt/H3-Tiny-17B-FewStep-v0.1 --base-model /models/MiniMax-H3 \\
+    python scripts/infer.py --weights ckpt/H3-Tiny-17B-FewStep-Ref2VA-v0.1 --base-model /models/MiniMax-H3 \\
         --prompt "<Picture 1> ..." --references ref1.png --num-frames 124 --out outputs/
 
     # first / last frame to video + audio with the FL2VA checkpoint (either frame may be omitted; neither = t2va)
