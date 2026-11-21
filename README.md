@@ -22,6 +22,9 @@ and few-step checkpoints.
 
 ## News
 
+- **[2026/11/21]** ComfyUI support: single-file checkpoints in
+  [`H3-Tiny-ComfyUI`](https://huggingface.co/H3-Tiny/H3-Tiny-ComfyUI) load with ComfyUI's native MiniMax H3 nodes
+  (17B Ref2VA, 17B FL2VA / T2VA, 14B OKD Ref2VA). See [ComfyUI](#comfyui).
 - **[2026/11/20]** We release [`H3-Tiny-17B-Pruned-FL2VA`](https://huggingface.co/H3-Tiny/H3-Tiny-17B-Pruned-FL2VA),
   the H3 FL2VA / T2VA transformer pruned to 17B with no training.
 - **[2026/11/19]** We release the pruning and inference code and the [project page](https://fuyi25.github.io/H3-Tiny/).
@@ -49,6 +52,7 @@ follow.
 - [x] Inference: 50-step and few-step (6 steps by default, 4 or more)
 - [x] Weights: 17B pruned, 17B few-step v0.1, 14B OKD v0.1
 - [x] FL2VA / T2VA: 17B pruned
+- [x] ComfyUI checkpoints
 - [ ] Weights: 14B few-step
 - [ ] OKD recovery training code
 - [ ] Few-step distillation code
@@ -100,6 +104,29 @@ python scripts/infer.py --weights ckpt/H3-Tiny-17B-Pruned-FL2VA --base-model /mo
 
 The pipeline is the official diffusers MiniMax H3 workflow with the H3-Tiny transformer and step schedule
 (`h3tiny/pipeline.py`).
+
+## ComfyUI
+
+[`H3-Tiny-ComfyUI`](https://huggingface.co/H3-Tiny/H3-Tiny-ComfyUI) holds the checkpoints as single files for
+ComfyUI's native MiniMax H3 support; no custom node is needed:
+
+| File | Workflow node |
+|---|---|
+| `h3_tiny_17b_ref2va_bf16.safetensors` | MiniMax H3 Reference to Video |
+| `h3_tiny_17b_fl2va_bf16.safetensors` | MiniMax H3 Image to Video (FL2VA with first / last frames, T2VA without) |
+| `h3_tiny_14b_okd_ref2va_bf16.safetensors` | MiniMax H3 Reference to Video |
+
+Put the file in `ComfyUI/models/diffusion_models/`, take the text encoder and VAEs from
+[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3), and select the file in **Load Diffusion Model**.
+Sample with 50 steps, the `simple` scheduler and no CFG (`BasicGuider`), without the turbo LoRA.
+
+To convert a diffusers checkpoint yourself:
+
+```bash
+python scripts/convert_comfyui.py --src ckpt/H3-Tiny-17B-Pruned-Ref2VA --out h3_tiny_17b_ref2va_bf16.safetensors
+```
+
+The few-step checkpoint does not convert: ComfyUI's MiniMax H3 model has no input for its interval-time branch.
 
 ## Pruning
 
